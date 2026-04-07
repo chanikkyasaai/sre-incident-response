@@ -139,7 +139,9 @@ def root():
 
 
 @app.post("/reset")
-def reset(req: ResetRequest):
+def reset(req: Optional[ResetRequest] = None):
+    if req is None:
+        req = ResetRequest()
     if req.task_id not in TASK_IDS:
         raise HTTPException(400, f"Unknown task_id. Valid: {TASK_IDS}")
 
