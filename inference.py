@@ -2,12 +2,12 @@
 SRE Incident Response — Inference Script
 Filename: inference.py  (required — do not rename)
 
-Environment variables injected by judges:
-  API_BASE_URL      LLM endpoint   (default: https://api.openai.com/v1)
-  MODEL_NAME        Model id       (default: gpt-4o-mini)
-  HF_TOKEN          Used as api_key when OPENAI_API_KEY absent
-  OPENAI_API_KEY    Optional
-  OPENENV_BASE_URL  Server URL     (default: http://127.0.0.1:7860)
+Environment variables injected by validator:
+  API_BASE_URL      LLM proxy endpoint (REQUIRED — must use this)
+  API_KEY           LLM proxy key      (REQUIRED — must use this)
+  MODEL_NAME        Model identifier
+  HF_TOKEN          HuggingFace token (fallback)
+  OPENENV_BASE_URL  Server URL (default: http://127.0.0.1:7860)
 
 Stdout: [START] / [STEP] / [END] only — all debug goes to stderr.
 """
@@ -17,10 +17,12 @@ import requests
 from openai import OpenAI
 
 # ── Config ────────────────────────────────────────────────────────
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
-MODEL_NAME   = os.getenv("MODEL_NAME",   "gpt-4o-mini")
-HF_TOKEN     = os.getenv("HF_TOKEN")
-OPENAI_KEY   = os.getenv("OPENAI_API_KEY") or HF_TOKEN or "dummy-key"
+# Use exactly the env vars injected by the validator
+API_BASE_URL = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
+MODEL_NAME   = os.environ.get("MODEL_NAME", "gpt-4o-mini")
+# Validator injects API_KEY — must use this variable name
+OPENAI_KEY   = os.environ.get("API_KEY") or os.environ.get("HF_TOKEN") or os.environ.get("OPENAI_API_KEY") or "dummy-key"
+HF_TOKEN     = os.environ.get("HF_TOKEN")
 ENV_BASE_URL = (
     os.getenv("OPENENV_BASE_URL", "http://127.0.0.1:7860")
     .replace("wss://", "https://").replace("ws://", "http://").rstrip("/")
@@ -234,7 +236,7 @@ def run_inference():
     def _timeout_handler(signum, frame):
         raise TimeoutError("Episode timeout")
 
-    llm    = OpenAI(api_key=OPENAI_KEY, base_url=API_BASE_URL)
+    llm    = OpenAI(api_key=OPENAI_KEY, base_url=API_BASE_URL)  # API_KEY + API_BASE_URL from validator
     scores = []
 
     for i, task_id in enumerate(TASKS):
