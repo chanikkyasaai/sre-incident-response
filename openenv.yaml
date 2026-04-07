@@ -1,0 +1,107 @@
+spec_version: "1"
+name:         sre-incident-response
+version:      "1.0.0"
+type:         chat
+description: >
+  Real-world SRE incident triage. Agent diagnoses production outages from
+  alerts, logs, and service metrics via multi-step investigation.
+  6 task families × 3 rotating variants = 18 unique episode configurations.
+  Hard tasks use partial observability — critical evidence requires targeted
+  diagnostic queries to surface.
+
+author: Nelapatla Chanikya Sai
+tags:
+  - openenv
+  - sre
+  - devops
+  - incident-response
+  - real-world
+  - partial-observability
+  - multi-step
+  - reasoning
+
+runtime:
+  python:     "3.11"
+  dockerfile: Dockerfile
+
+app:
+  module: server.app
+  object: app
+  port:   7860
+
+entry_point: server.sre_environment.SREEnvironment
+
+tasks:
+  - id:          easy_memory_leak
+    difficulty:  easy
+    score_range: [0.0, 1.0]
+    description: "Single service OOM — tests log reading and heap growth timeline"
+
+  - id:          easy_cpu_spike
+    difficulty:  easy
+    score_range: [0.0, 1.0]
+    description: "Batch job CPU saturation — tests alert + log correlation"
+
+  - id:          medium_db_contention
+    difficulty:  medium
+    score_range: [0.0, 1.0]
+    description: "Shared DB resource contention — tests dependency graph tracing"
+
+  - id:          medium_network
+    difficulty:  medium
+    score_range: [0.0, 1.0]
+    description: "Infrastructure event causing intermittent failures — tests temporal reasoning"
+
+  - id:          hard_bad_deploy
+    difficulty:  hard
+    score_range: [0.0, 1.0]
+    description: "Config-layer bad deploy — PARTIAL OBSERVABILITY. Critical evidence hidden behind diagnostic."
+
+  - id:          hard_cascade_oom
+    difficulty:  hard
+    score_range: [0.0, 1.0]
+    description: "Upstream OOM cascading downstream — PARTIAL OBSERVABILITY. Precise failure mechanism hidden."
+
+observation_space:
+  type: SREObservation
+  fields:
+    alerts:            "List[Alert] — active alerts with severity/metric/value/threshold"
+    logs:              "List[LogEntry] — recent logs across all services"
+    metrics:           "List[ServiceMetric] — cpu/mem/error_rate/latency/rps per service"
+    dependency_graph:  "Dict[str, List[str]] — service to downstream dependencies"
+    task_description:  "str — natural language incident description"
+    steps_remaining:   "int — steps before episode forced-ends"
+    diagnostic_result: "Optional[Dict] — result of last run_diagnostic"
+    action_feedback:   "str — feedback on last action"
+    done:              "bool"
+    reward:            "float"
+
+action_space:
+  type: SREAction
+  variants:
+    run_diagnostic:
+      description: "Query one service for deeper telemetry (costs 1 step)"
+      fields:
+        action_type:   "'run_diagnostic'"
+        query_service: "str — service from dependency_graph"
+        query_type:    "recent_logs | metrics_history | connections"
+    diagnose:
+      description: "Submit final diagnosis (ends episode)"
+      fields:
+        action_type:        "'diagnose'"
+        root_cause_service: "str — service from dependency_graph"
+        root_cause_type:    "memory_leak | cpu_spike | db_connection_exhaustion | lock_contention | cascade_failure | bad_deploy | network_partition"
+        recommended_action: "rollback | restart_service | scale_out | investigate_db | block_traffic | noop"
+        confidence:         "float [0.0, 1.0]"
+        reasoning:          "str — agent chain-of-thought"
+
+reward:
+  range: [0.0, 1.0]
+  type:  continuous
+  components:
+    root_cause_service: 0.45
+    root_cause_type:    0.30
+    recommended_action: 0.25
+  modifiers:
+    time_pressure: "score *= max(0.70, 1 - 0.06*(diag_steps-1)). First diagnostic free."
+    partial_observability: "Hard tasks: raw_score × 0.70 without hidden diagnostic, × 1.00 with it."
