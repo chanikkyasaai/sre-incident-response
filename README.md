@@ -1,6 +1,5 @@
 ---
 title: SRE Incident Response
-emoji: ??
 colorFrom: red
 colorTo: red
 sdk: docker
