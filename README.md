@@ -1,3 +1,13 @@
+---
+title: SRE Incident Response
+emoji: ??
+colorFrom: red
+colorTo: red
+sdk: docker
+pinned: false
+tags:
+  - openenv
+---
 # Task Scheduler
 This assignment is a PHP-based task management system where users can add tasks to a common list and subscribe to receive hourly email reminders for pending tasks.
 
@@ -308,3 +318,4 @@ Pending subscriptions must be stored as a JSON object with emails as keys:
 ```
 
 ⚠️ **Important**: Ensuring your data follows these exact JSON schemas is critical for proper validation.
+
