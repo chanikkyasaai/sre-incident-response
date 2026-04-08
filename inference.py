@@ -17,12 +17,12 @@ import requests
 from openai import OpenAI
 
 # ── Config ────────────────────────────────────────────────────────
-# MUST use exactly the env vars injected by validator — NO fallbacks
-# Validator checks: base_url=os.environ["API_BASE_URL"], api_key=os.environ["API_KEY"]
-API_BASE_URL = os.environ["API_BASE_URL"]          # injected by validator — required
-OPENAI_KEY   = os.environ["API_KEY"]               # injected by validator — required
-MODEL_NAME   = os.environ.get("MODEL_NAME", "gpt-4o-mini")
-HF_TOKEN     = os.environ.get("HF_TOKEN", "")
+# Exactly as specified in Pre-Submission Checklist:
+# API_BASE_URL and MODEL_NAME have defaults, HF_TOKEN does not
+API_BASE_URL = os.getenv("API_BASE_URL", "https://chane35-sre-incident-response.hf.space")
+MODEL_NAME   = os.getenv("MODEL_NAME",   "gpt-4o-mini")
+HF_TOKEN     = os.getenv("HF_TOKEN")       # no default — injected by validator
+OPENAI_KEY   = HF_TOKEN                    # HF_TOKEN is the API key
 # CRITICAL: Default to our live HF Space so validator can reach our env
 # Validator injects OPENENV_BASE_URL if they host it, otherwise we use our Space
 ENV_BASE_URL = (
@@ -253,7 +253,7 @@ def run_inference():
     def _timeout_handler(signum, frame):
         raise TimeoutError("Episode timeout")
 
-    llm    = OpenAI(api_key=OPENAI_KEY, base_url=API_BASE_URL)  # API_KEY + API_BASE_URL from validator
+    llm    = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
     scores = []
 
     for i, task_id in enumerate(TASKS):
