@@ -191,7 +191,10 @@ def run_episode(client, task_id, seed):
     success = score >= 0.5
     try: env.close()
     except: pass
-    log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+    # Score must be strictly between 0 and 1 (exclusive) — not 0.0 or 1.0
+    score = max(0.001, min(0.999, score))
+    rewards_clamped = [max(0.001, min(0.999, r)) if r > 0 else 0.001 for r in rewards]
+    log_end(success=success, steps=steps_taken, score=score, rewards=rewards_clamped)
     return score
 
 
