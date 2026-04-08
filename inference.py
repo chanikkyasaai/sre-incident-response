@@ -17,12 +17,12 @@ import requests
 from openai import OpenAI
 
 # ── Config ────────────────────────────────────────────────────────
-# Use exactly the env vars injected by the validator
-API_BASE_URL = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
+# MUST use exactly the env vars injected by validator — NO fallbacks
+# Validator checks: base_url=os.environ["API_BASE_URL"], api_key=os.environ["API_KEY"]
+API_BASE_URL = os.environ["API_BASE_URL"]          # injected by validator — required
+OPENAI_KEY   = os.environ["API_KEY"]               # injected by validator — required
 MODEL_NAME   = os.environ.get("MODEL_NAME", "gpt-4o-mini")
-# Validator injects API_KEY — must use this variable name
-OPENAI_KEY   = os.environ.get("API_KEY") or os.environ.get("HF_TOKEN") or os.environ.get("OPENAI_API_KEY") or "dummy-key"
-HF_TOKEN     = os.environ.get("HF_TOKEN")
+HF_TOKEN     = os.environ.get("HF_TOKEN", "")
 # CRITICAL: Default to our live HF Space so validator can reach our env
 # Validator injects OPENENV_BASE_URL if they host it, otherwise we use our Space
 ENV_BASE_URL = (
