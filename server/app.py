@@ -153,7 +153,7 @@ def reset(req: Optional[ResetRequest] = None):
 
     try:
         obs = session.env.reset(task_id=req.task_id, seed=req.seed)
-        return {"session_id": session_id, "observation": asdict(obs)}
+        return {"session_id": session_id, "observation": obs.model_dump()}
     except Exception as e:
         with _sessions_lock:
             _sessions.pop(session_id, None)
@@ -175,7 +175,7 @@ def step(req: StepRequest):
     )
     try:
         obs = session.env.step(action)
-        return {"observation": asdict(obs), "done": obs.done, "reward": obs.reward}
+        return {"observation": obs.model_dump(), "done": obs.done, "reward": obs.reward}
     except RuntimeError as e:
         raise HTTPException(400, str(e))
     except Exception as e:
@@ -185,7 +185,7 @@ def step(req: StepRequest):
 @app.get("/state")
 def state(session_id: str = Query(..., description="Session ID from /reset")):
     session = _get_session(session_id)
-    return asdict(session.env.state())
+    return session.env.state().model_dump()
 
 
 def main():
