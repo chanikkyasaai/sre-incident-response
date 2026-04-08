@@ -18,7 +18,7 @@ Output:
 
 import json
 import sys
-from dataclasses import asdict
+
 
 sys.path.insert(0, ".")
 
@@ -84,7 +84,7 @@ def run():
         for seed_idx in range(N_SEEDS):
             seed = seed_idx * 13 + 7
             obs  = env.reset(task_id=task_id, seed=seed)
-            a    = heuristic_diagnose(asdict(obs))
+            a    = heuristic_diagnose(obs.model_dump() if hasattr(obs, 'model_dump') else obs.__dict__)
             o    = env.step(a)
             scores.append(round(float(o.reward or 0.0), 4))
 

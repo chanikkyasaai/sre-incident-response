@@ -1,50 +1,45 @@
 """
-SRE Incident Response — typed models.
-Dataclass-based, matching OpenEnv Environment base class interface.
+SRE Incident Response — Typed Models (Pydantic BaseModel as required by OpenEnv spec)
 """
 
-from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
+from pydantic import BaseModel, Field, ConfigDict
 
 
 # ── OpenEnv base classes ───────────────────────────────────────────
 
-@dataclass
-class Action:
-    metadata: Dict[str, Any] = field(default_factory=dict)
+class Action(BaseModel):
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
-@dataclass
-class Observation:
-    done:     bool                         = False
-    reward:   Union[bool, int, float, None] = None
-    metadata: Dict[str, Any]               = field(default_factory=dict)
+class Observation(BaseModel):
+    done:     bool                          = False
+    reward:   Optional[Union[bool, int, float]] = None
+    metadata: Dict[str, Any]               = Field(default_factory=dict)
 
-@dataclass
-class State:
+class State(BaseModel):
     episode_id: Optional[str] = None
     step_count: int            = 0
 
 
 # ── Domain primitives ─────────────────────────────────────────────
 
-@dataclass
-class Alert:
+class Alert(BaseModel):
+    model_config = ConfigDict(frozen=False)
     service:   str
-    severity:  str            # P1 | P2 | P3
+    severity:  str
     message:   str
     metric:    Optional[str]   = None
     value:     Optional[float] = None
     threshold: Optional[float] = None
 
-@dataclass
-class LogEntry:
+class LogEntry(BaseModel):
     timestamp: str
-    level:     str            # ERROR | WARN | INFO
+    level:     str
     service:   str
     message:   str
 
-@dataclass
-class ServiceMetric:
+class ServiceMetric(BaseModel):
+    model_config = ConfigDict(frozen=False)
     service:             str
     cpu_percent:         float
     memory_percent:      float
@@ -68,53 +63,35 @@ VALID_ACTIONS = frozenset([
 
 # ── SRE-specific models ───────────────────────────────────────────
 
-@dataclass
 class SREAction(Action):
-    """
-    Two action modes:
-      run_diagnostic — query one service for deeper telemetry (costs 1 step)
-      diagnose       — submit final root-cause diagnosis (ends episode)
-    """
-    action_type: str = "diagnose"   # "run_diagnostic" | "diagnose"
-
-    # run_diagnostic fields
-    query_service: Optional[str] = None   # service name from dependency_graph
-    query_type:    Optional[str] = None   # "recent_logs" | "metrics_history" | "connections"
-
-    # diagnose fields
-    root_cause_service:  Optional[str]   = None
-    root_cause_type:     Optional[str]   = None
-    recommended_action:  Optional[str]   = None
-    confidence:          float           = 0.5
-    reasoning:           str             = ""
+    action_type:         str            = "diagnose"
+    query_service:       Optional[str]  = None
+    query_type:          Optional[str]  = None
+    root_cause_service:  Optional[str]  = None
+    root_cause_type:     Optional[str]  = None
+    recommended_action:  Optional[str]  = None
+    confidence:          float          = 0.5
+    reasoning:           str            = ""
 
 
-@dataclass
 class SREObservation(Observation):
-    # Core signals — always present
-    alerts:           List[Alert]              = field(default_factory=list)
-    logs:             List[LogEntry]           = field(default_factory=list)
-    metrics:          List[ServiceMetric]      = field(default_factory=list)
-    dependency_graph: Dict[str, List[str]]     = field(default_factory=dict)
-
-    # Episode context
-    task_id:              str = ""
-    task_description:     str = ""
-    time_elapsed_seconds: int = 0
-    steps_remaining:      int = 0
-
-    # Populated after run_diagnostic
-    diagnostic_result: Optional[Dict[str, Any]] = None
-    action_feedback:   str = ""
-
-    available_actions: List[str] = field(default_factory=list)
+    alerts:            List[Alert]          = Field(default_factory=list)
+    logs:              List[LogEntry]       = Field(default_factory=list)
+    metrics:           List[ServiceMetric]  = Field(default_factory=list)
+    dependency_graph:  Dict[str, List[str]] = Field(default_factory=dict)
+    task_id:               str = ""
+    task_description:      str = ""
+    time_elapsed_seconds:  int = 0
+    steps_remaining:       int = 0
+    diagnostic_result:     Optional[Dict[str, Any]] = None
+    action_feedback:       str = ""
+    available_actions:     List[str] = Field(default_factory=list)
 
 
-@dataclass
 class SREState(State):
-    task_id:         str   = ""
-    difficulty:      str   = ""
-    is_diagnosed:    bool  = False
-    current_score:   float = 0.0
-    max_steps:       int   = 0
-    steps_used:      int   = 0
+    task_id:       str   = ""
+    difficulty:    str   = ""
+    is_diagnosed:  bool  = False
+    current_score: float = 0.0
+    max_steps:     int   = 0
+    steps_used:    int   = 0
